@@ -1,0 +1,94 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  PROJECT_ID: project-b9c2a162-2cf0-4706-8d9
+  REGION: us-central1
+  REPO: devops-repo
+  IMAGE: api
+  GKE_CLUSTER: devops-cluster
+  GKE_ZONE: us-central1-a
+  NAMESPACE: devops-app
+  WIP: projects/1037988502025/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+  SA: github-actions-sa@project-b9c2a162-2cf0-4706-8d9.iam.gserviceaccount.com
+
+jobs:
+  test:
+    name: Pruebas unitarias
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - run: pip install -r app/requirements.txt pytest pytest-cov
+      - run: pytest app/test_main.py -v
+
+  build:
+    name: Build y Push imagen
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.WIP }}
+          service_account: ${{ env.SA }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+      - id: meta
+        run: |
+          SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          echo "tag=${{ github.run_number }}-${SHA}" >> "$GITHUB_OUTPUT"
+      - run: |
+          docker build \
+            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO }}/${{ env.IMAGE }}:${{ steps.meta.outputs.tag }} \
+            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO }}/${{ env.IMAGE }}:latest .
+      - run: |
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO }}/${{ env.IMAGE }}:${{ steps.meta.outputs.tag }}
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO }}/${{ env.IMAGE }}:latest
+
+  deploy:
+    name: Deploy a GKE
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.WIP }}
+          service_account: ${{ env.SA }}
+      - uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ env.GKE_CLUSTER }}
+          location: ${{ env.GKE_ZONE }}
+      - run: |
+          kubectl apply -f k8s/namespace.yaml
+          kubectl apply -f k8s/configmap-secret.yaml
+          kubectl apply -f k8s/redis.yaml
+          kubectl apply -f k8s/hpa.yaml
+          kubectl apply -f k8s/service.yaml
+      - run: |
+          IMAGE="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO }}/${{ env.IMAGE }}:${{ needs.build.outputs.image_tag }}"
+          kubectl set image deployment/api-deployment api=${IMAGE} -n ${{ env.NAMESPACE }}
+      - run: kubectl rollout status deployment/api-deployment -n ${{ env.NAMESPACE }} --timeout=300s
+      - run: |
+          kubectl get pods -n ${{ env.NAMESPACE }}
+          kubectl get svc -n ${{ env.NAMESPACE }}
+          kubectl get hpa -n ${{ env.NAMESPACE }}
