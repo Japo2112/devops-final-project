@@ -4,9 +4,9 @@ from unittest.mock import patch, MagicMock
 import sys
 import os
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from app.main import app
+from app.backend.main import app
 
 
 @pytest.fixture
@@ -30,7 +30,7 @@ def test_liveness(client):
 
 
 def test_readiness_redis_down(client):
-    with patch('app.main.get_redis', return_value=None):
+    with patch('app.backend.main.get_redis', return_value=None):
         response = client.get('/health/ready')
         assert response.status_code == 503
 
@@ -38,7 +38,7 @@ def test_readiness_redis_down(client):
 def test_readiness_redis_up(client):
     mock_redis = MagicMock()
     mock_redis.ping.return_value = True
-    with patch('app.main.get_redis', return_value=mock_redis):
+    with patch('app.backend.main.get_redis', return_value=mock_redis):
         response = client.get('/health/ready')
         assert response.status_code == 200
 
@@ -46,7 +46,7 @@ def test_readiness_redis_up(client):
 def test_counter_get(client):
     mock_redis = MagicMock()
     mock_redis.get.return_value = '42'
-    with patch('app.main.get_redis', return_value=mock_redis):
+    with patch('app.backend.main.get_redis', return_value=mock_redis):
         response = client.get('/counter')
         assert response.status_code == 200
         assert json.loads(response.data)['counter'] == 42
@@ -55,14 +55,14 @@ def test_counter_get(client):
 def test_counter_post(client):
     mock_redis = MagicMock()
     mock_redis.incr.return_value = 43
-    with patch('app.main.get_redis', return_value=mock_redis):
+    with patch('app.backend.main.get_redis', return_value=mock_redis):
         response = client.post('/counter')
         assert response.status_code == 200
         assert json.loads(response.data)['counter'] == 43
 
 
 def test_counter_redis_down(client):
-    with patch('app.main.get_redis', return_value=None):
+    with patch('app.backend.main.get_redis', return_value=None):
         response = client.get('/counter')
         assert response.status_code == 503
 

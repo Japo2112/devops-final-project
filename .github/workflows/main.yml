@@ -27,8 +27,8 @@ jobs:
         with:
           python-version: "3.12"
           cache: "pip"
-      - run: pip install -r app/requirements.txt pytest pytest-cov
-      - run: pytest app/test_main.py -v
+      - run: pip install -r app/backend/requirements.txt pytest pytest-cov
+      - run: pytest app/backend/test_main.py -v
 
   build:
     name: Build y Push imagen

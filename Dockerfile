@@ -7,7 +7,7 @@ WORKDIR /build
 RUN apt-get update && apt-get install -y --no-install-recommends gcc \
     && rm -rf /var/lib/apt/lists/*
 
-COPY app/requirements.txt .
+COPY app/backend/requirements.txt .
 
 RUN pip wheel --no-cache-dir --no-deps --wheel-dir /build/wheels -r requirements.txt
 
@@ -24,7 +24,8 @@ WORKDIR /app
 COPY --from=builder /build/wheels /wheels
 RUN pip install --no-cache-dir /wheels/* && rm -rf /wheels
 
-COPY app/main.py .
+COPY app/backend/main.py .
+COPY app/backend/templates/ ./templates/
 
 USER appuser
 
