@@ -220,3 +220,8 @@ venv/
 __pycache__/
 *.pyc
 github-actions-key.json
+node_modules/
+.angular/
+dist/
+*.pyc
+__pycache__/

@@ -1,0 +1,60 @@
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      
+      <div class="card shadow-sm mb-4 border-0 bg-dark text-white p-4 text-center">
+        <h1 class="display-6 m-0">PROYECTO FINAL - SISTEMAS OPERATIVOS II</h1>
+        <p class="text-muted mb-0 mt-2">Demostración de Aislamiento de Procesos y DevOps</p>
+      </div>
+
+      <div *ngIf="errorMensaje" class="alert alert-danger shadow-sm" role="alert">
+        <strong>Error de Comunicación:</strong> {{ errorMensaje }}
+      </div>
+
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white font-weight-bold">
+          Estado de la Infraestructura (GCP / Kubernetes)
+        </div>
+        <div class="card-body">
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              Servicio:
+              <span class="badge bg-secondary p-2">{{ infoServicio?.service || 'Buscando...' }}</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              Versión de la App:
+              <span class="badge bg-info text-dark p-2">{{ infoServicio?.version || 'Desconocida' }}</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              Entorno:
+              <span class="badge bg-warning text-dark p-2">{{ infoServicio?.environment || 'Desconocido' }}</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              Estado de Redis (Base de Datos):
+              <span class="badge p-2" [ngClass]="statusRedis === 'ready' ? 'bg-success' : 'bg-danger'">
+                {{ statusRedis | uppercase }}
+              </span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card shadow-sm text-center">
+        <div class="card-header bg-success text-white font-weight-bold">
+          Persistencia de Datos en Memoria (Redis)
+        </div>
+        <div class="card-body py-5">
+          <h3 class="card-title text-muted">Contador de Accesos Globales</h3>
+          <h2 class="display-3 my-4 font-weight-bold text-success">{{ valorContador }}</h2>
+          <button (click)="incrementarContador()" class="btn btn-success btn-lg px-5 shadow-sm">
+            ¡Registrar Acceso en Servidor!
+          </button>
+          <p class="text-muted mt-3 small">
+            Cada clic envía una instrucción síncrona que incrementa un registro aislado dentro del contenedor.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

@@ -74,7 +74,6 @@ def check_shutdown():
 def liveness():
     return jsonify({"status": "alive"}), 200
 
-
 @app.route('/health/ready', methods=['GET'])
 def readiness():
     r = get_redis()
@@ -86,7 +85,6 @@ def readiness():
     except Exception as e:
         return jsonify({"status": "not ready", "reason": str(e)}), 503
 
-
 @app.route('/', methods=['GET'])
 def index():
     REQUEST_COUNT.labels(method='GET', endpoint='/', status=200).inc()
@@ -95,7 +93,6 @@ def index():
         "version": os.environ.get('APP_VERSION', '1.0.0'),
         "environment": os.environ.get('APP_ENV', 'production')
     })
-
 
 @app.route('/counter', methods=['GET', 'POST'])
 def counter():
@@ -111,11 +108,9 @@ def counter():
     REQUEST_COUNT.labels(method=request.method, endpoint='/counter', status=200).inc()
     return jsonify({"action": action, "counter": int(value)})
 
-
 @app.route('/metrics', methods=['GET'])
 def metrics():
     return generate_latest(), 200, {'Content-Type': CONTENT_TYPE_LATEST}
-
 
 # ── Entry point ───────────────────────────────────────────────
 if __name__ == '__main__':
