@@ -25,7 +25,7 @@ COPY --from=builder /build/wheels /wheels
 RUN pip install --no-cache-dir /wheels/* && rm -rf /wheels
 
 COPY app/backend/main.py .
-COPY app/backend/templates/ ./templates/
+
 
 USER appuser
 
